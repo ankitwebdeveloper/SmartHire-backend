@@ -19,7 +19,7 @@ app.use(helmet());
 // ================= CORS (ONLY 2 ORIGINS) =================
 const allowedOrigins = [
   'http://localhost:5173',              // Local frontend
-  'https://your-frontend.vercel.app'   // 🔥 Apna real domain daalna
+  'https://smart-hire-frontend-two.vercel.app'   // 🔥 Apna real domain daalna
 ];
 
 app.use(cors({
@@ -98,6 +98,5 @@ startServer().catch((err) => {
 });
 
 
-
-//bvaljkrbvm aj. . 
-//AF AJKF 
+// cmcgkv
+//ghghkjhljhb
