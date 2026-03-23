@@ -3,7 +3,6 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
 const logger = require('./utils/logger');
 
 const connectDB = require('./config/db');
@@ -17,29 +16,14 @@ const app = express();
 // ================= SECURITY =================
 app.use(helmet());
 
-// ================= RATE LIMIT =================
-const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
-    success: false,
-    message: 'Too many requests, try again later'
-  }
-});
-
-app.use('/api/', apiLimiter);
-
 // ================= CORS (ONLY 2 ORIGINS) =================
 const allowedOrigins = [
   'http://localhost:5173',              // Local frontend
-  'https://your-frontend.vercel.app'   // 🔥 Replace with your live domain
+  'https://your-frontend.vercel.app'   // 🔥 Apna real domain daalna
 ];
 
-const corsOptions = {
-  origin: (origin, callback) => {
-    // Allow requests with no origin (Postman, mobile apps)
+app.use(cors({
+  origin: function (origin, callback) {
     if (!origin) return callback(null, true);
 
     if (allowedOrigins.includes(origin)) {
@@ -48,12 +32,8 @@ const corsOptions = {
 
     return callback(new Error(`CORS blocked: ${origin}`));
   },
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true,
-};
-
-app.use(cors(corsOptions));
+  credentials: true
+}));
 
 // ================= BODY PARSER =================
 app.use(express.json({ limit: '10kb' }));
@@ -82,7 +62,7 @@ app.get('/api', (req, res) => {
 
 // ================= ERROR LOGGING =================
 app.use((err, req, res, next) => {
-  logger.error(`Unhandled Exception at ${req.originalUrl}: ${err.message}`, {
+  logger.error(`Error at ${req.originalUrl}: ${err.message}`, {
     stack: err.stack
   });
 
@@ -90,8 +70,7 @@ app.use((err, req, res, next) => {
 
   res.status(err.status || 500).json({
     success: false,
-    message: err.message || 'Internal Server Error',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+    message: err.message || 'Internal Server Error'
   });
 });
 
@@ -112,8 +91,13 @@ async function startServer() {
 }
 
 startServer().catch((err) => {
-  logger.error(`Fatal startup error: ${err.message}`, {
+  logger.error(`Startup error: ${err.message}`, {
     stack: err.stack
   });
   process.exit(1);
 });
+
+
+
+//bvaljkrbvm aj. . 
+//AF AJKF 
