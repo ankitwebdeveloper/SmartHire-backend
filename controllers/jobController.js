@@ -1,4 +1,5 @@
 const Job = require('../models/Job');
+const User = require('../models/User');
 const EmployerProfile = require('../models/EmployerProfile');
 const EmployerSubscription = require('../models/EmployerSubscription');
 const AdminLog = require('../models/AdminLog');
@@ -55,14 +56,42 @@ const createJob = async (req, res, next) => {
     }
 
     // Frontend contract fields
-    const { title, company, location, salary, jobType, experience, description } = req.body;
+    const { 
+      title, company, location, salary, jobType, experience, description,
+      education, openings, gender, ageLimit, requiredSkills, selectedPlan
+    } = req.body;
     const { salaryMin, salaryMax } = parseSalaryRange(salary);
+
+    const user = await User.findById(employerId);
+
+    // Dynamic Job Credit Engine Evaluation
+    if (user.remainingJobCredits > 0) {
+       // Gracefully deduct an existing credit natively
+       user.remainingJobCredits -= 1;
+       await user.save();
+    } else {
+       // Validate new purchase loop since no credits exist natively
+       if (!selectedPlan || selectedPlan === 'active_plan') {
+          return res.status(403).json({ success: false, message: 'Insufficient Job Credits. Please select a valid explicit Pricing Plan.' });
+       }
+       
+       const creditMap = { basic: 3, standard: 7, premium: 15 };
+       const purchasedCredits = creditMap[selectedPlan] || 0;
+       
+       if (purchasedCredits === 0) return res.status(400).json({ success: false, message: 'Invalid specific plan mapped.' });
+
+       user.planName = selectedPlan;
+       user.totalJobCredits = purchasedCredits;
+       user.remainingJobCredits = purchasedCredits - 1; // Immediately deduct exactly 1 credit for the live job!
+       await user.save();
+    }
 
     // Prefer EmployerProfile if it exists (logo, canonical name), otherwise accept payload `company`
     const profile = await EmployerProfile.findOne({ userId: employerId }).catch(() => null);
 
-    const newJob = await Job.create({
-      employerId,
+    let newJob = await Job.findOne({ employerId, status: 'draft' });
+
+    const payload = {
       jobTitle: title,
       companyName: profile?.companyName || company,
       companyLogo: profile?.companyLogo || '',
@@ -71,12 +100,23 @@ const createJob = async (req, res, next) => {
       salaryMax,
       jobType,
       experienceLevel: experience || undefined,
+      education,
+      openings,
+      gender,
+      ageLimit,
+      requiredSkills,
+      selectedPlan: selectedPlan || user.planName, // Enforce latest known backend plan natively
       jobDescription: description,
-      // Enforce admin approval flow
       status: 'pending',
       approvalStatus: 'pending',
       acceptApplications: true,
-    });
+    };
+
+    if (newJob) {
+      newJob = await Job.findByIdAndUpdate(newJob._id, payload, { new: true });
+    } else {
+      newJob = await Job.create({ ...payload, employerId });
+    }
 
     res.status(201).json({ success: true, message: 'Job submitted for admin approval', data: newJob });
   } catch (error) {
@@ -102,17 +142,21 @@ const getEmployerJobs = async (req, res, next) => {
 // @access  Public
 const getApprovedJobs = async (req, res, next) => {
   try {
-    const { title, location, category, experienceLevel, jobType, page = 1, limit = 20 } = req.query;
+    const { keyword, location, category, experienceLevel, jobType, page = 1, limit = 20 } = req.query;
 
-    // Clamp regex inputs to prevent ReDoS — a 5000-char title search string could DoS the server
-    const sanitizedTitle = title ? String(title).slice(0, 100) : null;
+    // Clamp regex inputs to prevent ReDoS — a 5000-char search string could DoS the server
+    const sanitizedKeyword = keyword ? String(keyword).slice(0, 100) : null;
     const sanitizedLocation = location ? String(location).slice(0, 100) : null;
 
     const query = { approvalStatus: 'approved' };
 
     // Apply Filters conditionally
-    if (sanitizedTitle) {
-        query.jobTitle = { $regex: sanitizedTitle, $options: 'i' };
+    if (sanitizedKeyword) {
+        query.$or = [
+            { jobTitle: { $regex: sanitizedKeyword, $options: 'i' } },
+            { companyName: { $regex: sanitizedKeyword, $options: 'i' } },
+            { jobDescription: { $regex: sanitizedKeyword, $options: 'i' } }
+        ];
     }
     if (sanitizedLocation) query.location = { $regex: sanitizedLocation, $options: 'i' };
     if (category) query.category = category;
@@ -227,11 +271,67 @@ const deleteJob = async (req, res, next) => {
   }
 };
 
+const getDraftJob = async (req, res, next) => {
+  try {
+    const job = await Job.findOne({ employerId: req.user._id, status: 'draft' });
+    res.json({ success: true, data: job });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const saveDraftJob = async (req, res, next) => {
+  try {
+    const employerId = req.user._id;
+    const { 
+      title, company, location, salary, jobType, experience, description,
+      education, openings, gender, ageLimit, requiredSkills
+    } = req.body;
+    const { salaryMin, salaryMax } = parseSalaryRange(salary);
+
+    const profile = await EmployerProfile.findOne({ userId: employerId }).catch(() => null);
+
+    let draft = await Job.findOne({ employerId, status: 'draft' });
+
+    const payload = {
+      jobTitle: title || 'Draft Job',
+      companyName: profile?.companyName || company,
+      companyLogo: profile?.companyLogo || '',
+      location: location || '',
+      salaryMin,
+      salaryMax,
+      jobType: jobType || 'full-time',
+      experienceLevel: experience || undefined,
+      education,
+      openings,
+      gender,
+      ageLimit,
+      requiredSkills,
+      jobDescription: description || '...',
+      status: 'draft',
+      approvalStatus: 'draft',
+      acceptApplications: false,
+    };
+
+    if (draft) {
+       draft = await Job.findByIdAndUpdate(draft._id, payload, { new: true });
+    } else {
+       draft = await Job.create({ ...payload, employerId });
+    }
+
+    res.status(200).json({ success: true, message: 'Draft saved safely', data: draft });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createJob,
   getEmployerJobs,
   getApprovedJobs,
   getJobById,
   updateJob,
-  deleteJob
+  deleteJob,
+  getDraftJob,
+  saveDraftJob
 };

@@ -44,6 +44,18 @@ const userSchema = new mongoose.Schema(
       enum: ['email', 'google'],
       default: 'email',
     },
+    planName: {
+      type: String,
+      default: null,
+    },
+    totalJobCredits: {
+      type: Number,
+      default: 0,
+    },
+    remainingJobCredits: {
+      type: Number,
+      default: 0,
+    },
     accountStatus: {
       type: String,
       enum: ['active', 'blocked'],

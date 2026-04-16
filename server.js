@@ -36,7 +36,8 @@ app.use(cors({
 }));
 
 // ================= BODY PARSER =================
-app.use(express.json({ limit: '10kb' }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // ================= STATIC =================
 app.use(express.static(path.join(__dirname, 'public')));

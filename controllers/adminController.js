@@ -5,6 +5,25 @@ const AdminLog = require('../models/AdminLog');
 const bcrypt = require('bcryptjs');
 const { createNotification } = require('./notificationController');
 
+function parseSalaryRange(salary) {
+  if (!salary) return { salaryMin: undefined, salaryMax: undefined };
+  const raw = String(salary).trim();
+  if (!raw) return { salaryMin: undefined, salaryMax: undefined };
+
+  const nums = raw
+    .replace(/,/g, '')
+    .match(/\d+(\.\d+)?/g)
+    ?.map((n) => Number(n))
+    .filter((n) => Number.isFinite(n));
+
+  if (!nums || nums.length === 0) return { salaryMin: undefined, salaryMax: undefined };
+  if (nums.length === 1) return { salaryMin: nums[0], salaryMax: nums[0] };
+
+  const min = Math.min(nums[0], nums[1]);
+  const max = Math.max(nums[0], nums[1]);
+  return { salaryMin: min, salaryMax: max };
+}
+
 // @desc    Get all pending jobs requiring admin review
 // @route   GET /api/admin/jobs/pending
 // @access  Private (Admin)
@@ -305,10 +324,105 @@ const getDashboardStats = async (req, res, next) => {
   }
 };
 
+// @desc    Admin direct publish job (no payment)
+// @route   POST /api/admin/jobs
+// @access  Private (Admin)
+const createAdminJob = async (req, res, next) => {
+  try {
+    const {
+      jobTitle,
+      companyName,
+      location,
+      salary,
+      jobType,
+      category,
+      jobDescription,
+      skillsRequired,
+      experienceRequired,
+      education,
+      openings,
+      gender,
+      ageLimit,
+    } = req.body;
+
+    const requiredSkills = String(skillsRequired || '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    const { salaryMin, salaryMax } = parseSalaryRange(salary);
+
+    const job = await Job.create({
+      employerId: req.user._id,
+      jobTitle,
+      companyName,
+      location,
+      salaryMin,
+      salaryMax,
+      jobType,
+      category,
+      jobDescription,
+      requiredSkills,
+      experienceLevel: experienceRequired,
+      education,
+      openings,
+      gender: gender ? String(gender) : undefined,
+      ageLimit: ageLimit ? String(ageLimit) : undefined,
+
+      // Direct publish: immediate live listing
+      approvalStatus: 'approved',
+      status: 'approved',
+      approvedBy: req.user._id,
+
+      acceptApplications: true,
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Job posted successfully',
+      data: job,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Admin jobs list (for job list redirect)
+// @route   GET /api/admin/jobs?status=approved
+// @access  Private (Admin)
+const getAdminJobs = async (req, res, next) => {
+  try {
+    const status = req.query.status;
+    const filter = status ? { approvalStatus: status } : {};
+    const jobs = await Job.find(filter).sort({ createdAt: -1 });
+    res.json({ success: true, count: jobs.length, data: jobs });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Delete a job (Admin)
+// @route   DELETE /api/admin/jobs/:id
+// @access  Private (Admin)
+const deleteAdminJob = async (req, res, next) => {
+  try {
+    const deleted = await Job.findByIdAndDelete(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: 'Job not found' });
+    }
+    res.json({ success: true, message: 'Job deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getPendingJobs,
   approveJob,
   rejectJob,
+  createAdminJob,
+  getAdminJobs,
+  deleteAdminJob,
   getAllUsers,
   blockUser,
   deleteUser,

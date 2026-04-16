@@ -40,6 +40,27 @@ const schemas = {
     status: Joi.string().valid('applied', 'under_review', 'shortlisted', 'interview', 'selected', 'rejected').required(),
   }),
 
+  // Admin direct publish job creation (no employer subscription/payment)
+  adminJobCreation: Joi.object({
+    jobTitle: Joi.string().required().min(3).max(100).trim(),
+    companyName: Joi.string().required().min(2).max(120).trim(),
+    location: Joi.string().required().min(2).max(120).trim(),
+    salary: Joi.string().required().min(1).max(60).trim(),
+    jobType: Joi.string().valid('full-time', 'part-time', 'internship', 'contract', 'remote').required(),
+    category: Joi.string().valid('IT', 'Marketing', 'Finance', 'Design', 'Engineering', 'Other').required(),
+    jobDescription: Joi.string().required().min(20).max(5000).trim(),
+    skillsRequired: Joi.string().required().min(1).max(2000).trim(),
+
+    // Candidate requirements
+    experienceRequired: Joi.string()
+      .valid('fresher', '1-3 years', '3-5 years', '5+ years')
+      .required(),
+    education: Joi.string().required().min(2).max(2000).trim(),
+    openings: Joi.number().integer().min(1).required(),
+    gender: Joi.string().allow('', null).optional(),
+    ageLimit: Joi.string().allow('', null).optional(),
+  }),
+
   userRegistration: Joi.object({
     name: Joi.string().required().min(2).max(80).trim(),
     email: Joi.string().email().required().lowercase().trim(),

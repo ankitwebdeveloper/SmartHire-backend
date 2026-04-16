@@ -171,3 +171,17 @@
     at processParams (C:\Users\hp\OneDrive\Desktop\Smarthire-Multi\backend\node_modules\router\index.js:582:12)
     at next (C:\Users\hp\OneDrive\Desktop\Smarthire-Multi\backend\node_modules\router\index.js:291:5)
     at cors (C:\Users\hp\OneDrive\Desktop\Smarthire-Multi\backend\node_modules\cors\lib\index.js:188:7)
+[2026-04-16 16:06:46] ERROR: ValidationError: Job validation failed: jobType: `Full Time` is not a valid enum value for path `jobType`.
+    at model.validate (C:\Users\hp\OneDrive\Desktop\Smarthire-Multi\backend\node_modules\mongoose\lib\document.js:2864:36)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async model.$__save (C:\Users\hp\OneDrive\Desktop\Smarthire-Multi\backend\node_modules\mongoose\lib\model.js:389:7)
+    at async model.save (C:\Users\hp\OneDrive\Desktop\Smarthire-Multi\backend\node_modules\mongoose\lib\model.js:663:5)
+    at async model.create (C:\Users\hp\OneDrive\Desktop\Smarthire-Multi\backend\node_modules\mongoose\lib\model.js:2750:5)
+    at async saveDraftJob (C:\Users\hp\OneDrive\Desktop\Smarthire-Multi\backend\controllers\jobController.js:295:16)
+[2026-04-16 16:15:29] ERROR: ValidationError: Job validation failed: jobType: `Full Time` is not a valid enum value for path `jobType`., experienceLevel: `Fresher` is not a valid enum value for path `experienceLevel`.
+    at model.validate (C:\Users\hp\OneDrive\Desktop\Smarthire-Multi\backend\node_modules\mongoose\lib\document.js:2864:36)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async model.$__save (C:\Users\hp\OneDrive\Desktop\Smarthire-Multi\backend\node_modules\mongoose\lib\model.js:389:7)
+    at async model.save (C:\Users\hp\OneDrive\Desktop\Smarthire-Multi\backend\node_modules\mongoose\lib\model.js:663:5)
+    at async model.create (C:\Users\hp\OneDrive\Desktop\Smarthire-Multi\backend\node_modules\mongoose\lib\model.js:2750:5)
+    at async saveDraftJob (C:\Users\hp\OneDrive\Desktop\Smarthire-Multi\backend\controllers\jobController.js:295:16)

@@ -1,12 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const { 
-  createJob, 
-  getEmployerJobs, 
-  getApprovedJobs, 
+const {
+  createJob,
+  getEmployerJobs,
+  getApprovedJobs,
   getJobById,
   updateJob,
-  deleteJob
+  deleteJob,
+  getDraftJob,
+  saveDraftJob
 } = require('../controllers/jobController');
 
 const { protect } = require('../middleware/authMiddleware');
@@ -28,6 +30,16 @@ router.get('/', getApprovedJobs);
 // @access  Private (Employer)
 // NOTE: Must be above /:id to prevent keyword collision
 router.get('/employer', protect, requireEmployer, getEmployerJobs);
+
+// @route   GET /api/jobs/draft
+// @desc    Get user's draft job
+// @access  Private (Employer)
+router.get('/draft', protect, requireEmployer, getDraftJob);
+
+// @route   POST /api/jobs/draft
+// @desc    Save existing job session to background draft
+// @access  Private (Employer)
+router.post('/draft', protect, requireEmployer, saveDraftJob);
 
 // @route   PUT /api/jobs/:id
 // @desc    Update a job listing (resubmits for approval)

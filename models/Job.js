@@ -51,15 +51,25 @@ const jobSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
+  education: String,
+  openings: Number,
+  gender: String,
+  ageLimit: String,
+  paymentStatus: {
+    type: String,
+    enum: ['unpaid', 'completed'],
+    default: 'unpaid'
+  },
+  selectedPlan: String,
   approvalStatus: {
     type: String,
-    enum: ['pending', 'approved', 'rejected'],
+    enum: ['draft', 'pending', 'approved', 'rejected'],
     default: 'pending' // Admin must review
   },
   // Alias used by frontend dashboard & API contract
   status: {
     type: String,
-    enum: ['pending', 'approved', 'rejected'],
+    enum: ['draft', 'pending', 'approved', 'rejected'],
     default: 'pending',
   },
   approvedBy: {
